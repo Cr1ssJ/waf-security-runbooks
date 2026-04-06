@@ -24,32 +24,28 @@ waf-security-runbooks/
 ├── README.md
 │
 ├── 01-false-positive-diagnosis/
-│   ├── README.md
-│   ├── waf-false-positive-triage.md
-│   └── common-fp-patterns.md
+│   └──  waf-false-positive-triage.md
+│   
+│   
 │
 ├── 02-ddos-alert-triage/
-│   ├── README.md
-│   ├── ddos-burst-vs-attack.md
-│   └── threshold-tuning-guide.md
+│   └── ddos-burst-vs-attack.md
+│   
+│   
 │
 ├── 03-bot-protection/
-│   ├── README.md
 │   ├── abp-traffic-classification.md
 │   └── mobile-sdk-fingerprints.md
+│   
 │
 ├── 04-waf-rule-tuning/
-│   ├── README.md
-│   ├── rule-tuning-methodology.md
 │   └── allowlist-decision-framework.md
+│   
+│   
 │
 ├── 05-incident-response/
-│   ├── README.md
-│   ├── multi-vector-attack-response.md
 │   └── incident-report-template.md
-│
-└── assets/
-    └── diagrams/
+
 ```
 
 ---
