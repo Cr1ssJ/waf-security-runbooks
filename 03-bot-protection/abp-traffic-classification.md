@@ -8,7 +8,7 @@
 
 ## 🎯 Purpose
 
-Advanced Bot Protection generates two primary traffic categories: **Suspicious** and **Mitigated**. The challenge is that not all Suspicious traffic is malicious, and not all traffic that looks clean is legitimate.
+Advanced Bot Protection generates two primary traffic categories: **Suspicious** and **Blocked**. The challenge is that not all Suspicious traffic is malicious, and not all traffic that looks clean is legitimate.
 
 This runbook documents the methodology for classifying ABP traffic across a set of policies grouped by scope and purpose — distinguishing:
 
