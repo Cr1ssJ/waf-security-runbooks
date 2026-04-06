@@ -39,7 +39,7 @@ Before classifying any traffic, understand what the policy is protecting:
 Imperva ABP classifies traffic into:
 
 - **Suspicious:** Traffic that exhibits bot-like characteristics but hasn't been confirmed as malicious
-- **Mitigated:** Traffic that was blocked/challenged based on confirmed bot signals
+- **Blocked:** Traffic that was blocked/challenged based on confirmed bot signals
 
 The key question for each bucket is not just "is this a bot?" but **"is this bot traffic legitimate for this application?"**
 
