@@ -14,6 +14,43 @@ An allowlist is a deliberate exception to your security policy. Every allowlist 
 
 ---
 
+## ⚠️ Critical: Allowlists Kill Visibility — Logs Are Not Generated
+
+This is one of the most important operational facts about WAF allowlists that is often overlooked:
+
+> **Traffic that matches an allowlist entry does NOT generate security events — not in the WAF, and not in any connected SIEM.**
+
+This means:
+
+- You cannot audit allowlisted traffic after the fact
+- You cannot detect abuse of an allowlisted IP or path
+- If the allowlisted source is ever compromised, its malicious traffic becomes invisible
+- SIEM correlation rules will never fire on allowlisted requests — even if the request is malicious
+
+### Allowlist vs. ACL — Always Prefer ACLs
+
+| Mechanism | Generates events/logs | SIEM visibility | Reversible detection | Use when |
+|---|---|---|---|---|
+| **Allowlist** | ❌ No | ❌ Blind | ❌ No | Almost never — only when ACL is not an option |
+| **ACL (Access Control List)** | ✅ Yes | ✅ Full | ✅ Yes | Default choice for any exception |
+
+**ACLs allow the traffic through but still generate log entries.** This means:
+
+- The SIEM still receives the events
+- Anomaly detection rules can still fire
+- You maintain an audit trail
+- If the source behavior changes, you will know
+
+### The Practical Rule
+
+**Default to ACL. Use allowlist only when the platform provides no other mechanism.**
+
+If you must use an allowlist, apply the absolute minimum scope — specific IP + specific path + specific rule — precisely because you are creating a permanent blind spot in your visibility for everything that scope covers.
+
+A broad allowlist (e.g., site-wide for a large IP range) doesn't just reduce protection — it eliminates your ability to detect anything from that source, ever, as long as the allowlist exists.
+
+---
+
 ## ❌ When NOT to Create an Allowlist
 
 - You haven't confirmed the traffic is legitimate (evidence required)
@@ -51,13 +88,18 @@ Always apply the most restrictive combination of conditions possible:
 7. Site-wide / global                    ← almost always wrong
 ```
 
-**Never create a site-wide allowlist for a specific IP without understanding every endpoint that IP can now reach.**
+**Never create a site-wide allowlist for a specific IP without understanding every endpoint that IP can now reach — and accepting that you will be completely blind to everything that IP does across the entire site.**
 
 ---
 
 ## 📋 Pre-Allowlist Checklist
 
 ```
+Before choosing an allowlist, ask first:
+[ ] Can this be handled with an ACL instead? (ACLs generate logs — allowlists do not)
+[ ] If ACL is available: USE ACL, not allowlist. Stop here.
+[ ] If allowlist is the only available mechanism: continue below.
+
 Evidence gathering:
 [ ] Raw request(s) reviewed
 [ ] Source IP / ASN identified and verified
@@ -67,12 +109,14 @@ Evidence gathering:
 [ ] Business justification confirmed with application team
 
 Risk assessment:
-[ ] Impact if this source IS malicious (what could it access?)
+[ ] Understood that this source will be INVISIBLE in logs and SIEM after allowlisting
+[ ] Impact if this source IS compromised and begins sending malicious traffic
 [ ] Existing controls that still apply (rate limiting, other rules)
-[ ] Minimum scope determined
+[ ] Minimum scope determined — remember: every additional scope = additional blind spot
 
 Approval:
 [ ] Change reviewed by security lead or client
+[ ] Client/stakeholder explicitly informed that allowlisted traffic will not appear in reports
 [ ] Documented in change log
 
 Implementation:
@@ -94,6 +138,9 @@ Creation ──► 30-day review ──► 90-day review ──► Annual audit 
 - Has the use case changed?
 - Is the scope still the minimum necessary?
 - Has the application changed in a way that makes this allowlist unnecessary?
+- Can this now be replaced with an ACL to restore visibility?
+
+> **The goal of every allowlist review is to eliminate the allowlist or convert it to an ACL.** Allowlists should be temporary by default. Every day an allowlist exists is another day you have no visibility into that traffic.
 
 ---
 
