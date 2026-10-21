@@ -1,4 +1,4 @@
-# Excepciones sin perder visibilidad: Allowlist, ACL y Tag
+# Excepciones sin perder visibilidad: Allowlist y ACL
 
 | Campo | Valor |
 |---|---|
@@ -34,14 +34,13 @@ Esto se confirmó en operación real. Valídalo en tu cuenta antes de depender d
 |---|---|---|---|
 | **Allowlist** | No | No | Último recurso, solo si no existe otra opción. |
 | **Excepción basada en ACL** | Sí | Sí | **Opción por defecto** para cualquier excepción. |
-| **Acción Tag (ABP)** | Sí | Sí | Para **clasificar** tráfico legítimo conocido sin perder rastro. |
-| **Acción Allow / Ignore en una regla** | Con visibilidad reducida | Con visibilidad reducida | Solo si la etiqueta (Tag) no resuelve el caso. |
+| **Acción Allow / Ignore en una regla** | Con visibilidad reducida | Con visibilidad reducida | Solo si la ACL no resuelve el caso. |
 
 ## 4. Árbol de decisión
 
 1. **¿Es realmente un falso positivo?** Revisa la solicitud completa, el origen y el contexto de la aplicación.
 2. **¿Se resuelve ajustando la regla o corrigiendo la aplicación?** Si la regla es demasiado amplia, arréglala; no la rodees.
-3. **¿Puedo usar ACL o Tag?** Si sí, **detente aquí**.
+3. **¿Puedo usar una ACL?** Si sí, **detente aquí**.
 4. **¿Es la allowlist la única opción?** Entonces aplica el alcance mínimo y documenta la zona ciega que estás aceptando.
 
 ## 5. Alcance: del más al menos restrictivo
@@ -62,7 +61,7 @@ Esto se confirmó en operación real. Valídalo en tu cuenta antes de depender d
 
 ```
 Antes de elegir el mecanismo:
-[ ] ¿Se puede resolver con ACL o Tag?  Si sí: usarlos. Fin.
+[ ] ¿Se puede resolver con una ACL?  Si sí: usarla. Fin.
 
 Evidencia:
 [ ] Solicitud(es) completa(s) revisada(s)
@@ -113,19 +112,19 @@ En cada revisión pregunta: ¿el origen sigue activo?, ¿cambió el caso de uso?
 
 **Resultado.** Aparecieron falsos positivos de clientes HTTP legítimos: utilidades de Windows, bibliotecas de Java, Postman, `python-requests` y clientes Ruby, usados por integraciones y equipos de desarrollo.
 
-**Lección:** sin la fase de Alert, estas integraciones se habrían bloqueado. La clasificación por User-Agent no distingue **intención**; solo describe la herramienta.
+**Lección:** sin la fase de observación (Passive/Alert), estas integraciones se habrían bloqueado. La clasificación por User-Agent no distingue **intención**; solo describe la herramienta.
 
 ### Caso C — Una regla de redirección sin modo Alert
 
-**Situación.** Las reglas de redirección ejecutan su acción de inmediato; no existe un equivalente a "modo Alert".
+**Situación.** Las reglas de redirección ejecutan su acción de inmediato; no existe un equivalente a "modo Alert". Además, normalmente **tienen prioridad: se evalúan antes que las reglas de seguridad**. Por eso, una vez activa, una redirección puede actuar sobre el tráfico antes de que lo evalúen las reglas de seguridad (confirma el orden de evaluación en tu cuenta).
 
-**Solución.** Crear una **regla sombra** en paralelo, con la misma condición y acción Alert, y validar con ella antes de activar la redirección real.
+**Solución.** Crear una **regla sombra** en paralelo, con la misma condición y acción Alert, y mantener la **regla de redirección real apagada (deshabilitada)** mientras se valida con ella. Solo cuando la evidencia confirme que la condición afecta únicamente al tráfico esperado se enciende la redirección.
 
 ## 9. Plantilla de registro de cambio
 
 ```
 Fecha:
-Mecanismo (Allowlist / ACL / Tag / Allow en regla):
+Mecanismo (Allowlist / ACL / Allow en regla):
 Regla o condición afectada:
 Sitio / ruta:
 Origen (IP / ASN / servicio):

@@ -1,4 +1,4 @@
-# Exceptions Without Losing Visibility: Allowlist, ACL and Tag
+# Exceptions Without Losing Visibility: Allowlist and ACL
 
 | Field | Value |
 |---|---|
@@ -34,14 +34,13 @@ This was confirmed in real operation. Validate it in your own account before rel
 |---|---|---|---|
 | **Allowlist** | No | No | Last resort, only when no other option exists. |
 | **ACL-based exception** | Yes | Yes | **Default choice** for any exception. |
-| **Tag action (ABP)** | Yes | Yes | To **classify** known legitimate traffic without losing the trail. |
-| **Allow / Ignore action in a rule** | Reduced visibility | Reduced visibility | Only if Tag does not solve the case. |
+| **Allow / Ignore action in a rule** | Reduced visibility | Reduced visibility | Only if an ACL does not solve the case. |
 
 ## 4. Decision Tree
 
 1. **Is it really a false positive?** Review the full request, the source and the application context.
 2. **Can it be fixed by tuning the rule or fixing the application?** If the rule is too broad, fix it; do not work around it.
-3. **Can I use ACL or Tag?** If yes, **stop here**.
+3. **Can I use an ACL?** If yes, **stop here**.
 4. **Is an allowlist the only option?** Then apply the minimum scope and document the blind spot you are accepting.
 
 ## 5. Scope: Most to Least Restrictive
@@ -62,7 +61,7 @@ This was confirmed in real operation. Validate it in your own account before rel
 
 ```
 Before choosing a mechanism:
-[ ] Can this be solved with ACL or Tag?  If yes: use them. Done.
+[ ] Can this be solved with an ACL?  If yes: use it. Done.
 
 Evidence:
 [ ] Full request(s) reviewed
@@ -113,19 +112,19 @@ At each review ask: is the source still active? Did the use case change? Is the 
 
 **Outcome.** False positives appeared from legitimate HTTP clients: Windows utilities, Java libraries, Postman, `python-requests` and Ruby clients, used by integrations and development teams.
 
-**Lesson:** without the Alert phase these integrations would have been blocked. User-Agent classification does not tell you **intent**; it only describes the tool.
+**Lesson:** without the observation phase (Passive/Alert) these integrations would have been blocked. User-Agent classification does not tell you **intent**; it only describes the tool.
 
 ### Case C — A redirect rule with no Alert mode
 
-**Situation.** Redirect rules apply their action immediately; there is no "Alert mode" equivalent.
+**Situation.** Redirect rules apply their action immediately; there is no "Alert mode" equivalent. They also normally **take priority: they are evaluated before security rules**. So once active, a redirect can act on traffic before security rules evaluate it (confirm the evaluation order in your account).
 
-**Solution.** Create a parallel **shadow rule** with the same condition and an Alert action, and validate with it before enabling the real redirect.
+**Solution.** Create a parallel **shadow rule** with the same condition and an Alert action, and keep the **real redirect rule switched off (disabled)** while you validate with it. Only when the evidence confirms the condition affects just the expected traffic do you turn the redirect on.
 
 ## 9. Change Log Template
 
 ```
 Date:
-Mechanism (Allowlist / ACL / Tag / Allow in rule):
+Mechanism (Allowlist / ACL / Allow in rule):
 Rule or condition affected:
 Site / path:
 Source (IP / ASN / service):

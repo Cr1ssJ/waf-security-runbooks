@@ -20,7 +20,7 @@ This runbook explains how to roll ABP out in phases, how to classify traffic fla
 
 1. Diagnose before acting.
 2. Build a traffic baseline before creating rules.
-3. Always follow **Passive → Alert/CAPTCHA → Block**, never skipping a phase.
+3. Always move in two stages: first **Passive/Alert mode**, where **no action is applied** and you only observe; then an **active action**, which can be **CAPTCHA** or **Block**. Alert and CAPTCHA are not the same thing: Alert does not act on traffic, CAPTCHA does. Never skip the observation stage.
 4. Validate false positives in a non-production environment before going to production.
 5. Identify legitimate traffic (first- and third-party) before enabling blocking conditions.
 6. Prefer **behavioral** signals over signatures that are easy to rotate.
@@ -40,9 +40,9 @@ A clean way to plan ABP is to split it into pillars. Each one goes through the p
 
 | Pillar | What it looks for | Suggested logic | Cautions |
 |---|---|---|---|
-| **1. Traffic hygiene** | Requests that no real browser produces: missing User-Agent, badly normalized paths, missing token, cloud-provider origin. | Evaluate each signal separately in Passive, then decide how to combine them. | A missing token is normal for non-browser integrations. Cloud providers may host **your own** infrastructure: confirm an inventory of legitimate ASNs before blocking. |
-| **2. Manipulation detection** | Traffic that tampers with its own token or interrogation (for example, invalid checksums or challenge manipulation). | `any` (OR): **one** signal is enough. | High-confidence signals, but still validate in Passive first. |
-| **3. Environment emulation detection** | Automated browsers or clients that lie about their identity (impostors, webdriver, evasion tooling). | Combine with other signals; lower-precision ones are **tagged (Tag)** and you act on the tag. | Some fingerprint-tampering signals have known false positives on uncommon devices. Example signals to review (confirm names in your console): `browser_impostor`, `fingerprint_tampering_*`. |
+| **1. Traffic hygiene** | Requests that no real browser produces: missing User-Agent, badly normalized paths, missing token, cloud-provider origin. | Evaluate each signal separately in Passive/Alert, then decide how to combine them. | A missing token is normal for non-browser integrations. Cloud providers may host **your own** infrastructure: confirm an inventory of legitimate ASNs before blocking. |
+| **2. Manipulation detection** | Traffic that tampers with its own token or interrogation (for example, invalid checksums or challenge manipulation). | `any` (OR): **one** signal is enough. | High-confidence signals, but still validate in Passive/Alert first. |
+| **3. Environment emulation detection** | Automated browsers or clients that lie about their identity (impostors, webdriver, evasion tooling). | Combine with other signals; lower-precision ones stay in Passive/Alert until combined with other indicators, and only then move to an active action. | Some fingerprint-tampering signals have known false positives on uncommon devices. Example signals to review (confirm names in your console): `browser_impostor`, `fingerprint_tampering_*`. |
 | **4. Environment separation** | Keeping test traffic from polluting production. | Depends on architecture. | **Optional**, and may be put on hold by the application owner. |
 
 > **Rule of thumb:** use `any` (OR) to detect **manipulation** and `all` (AND) for **correlated fraud**. This cuts false positives where a single signal is not enough.
@@ -51,13 +51,14 @@ A clean way to plan ABP is to split it into pillars. Each one goes through the p
 
 The criterion to advance is **evidence**, not the calendar. Phase length depends on the site's traffic volume.
 
+> **Important:** Alert and CAPTCHA are different things. In **Passive/Alert mode no action is applied** to traffic; **CAPTCHA and Block are active actions**.
+
 | Phase | What happens | Exit criterion |
 |---|---|---|
 | **0. Baseline** | Inventory normal traffic across the five dimensions (section 6): User-Agent, ISP/ASN, paths, hours and session behavior. Identify first- and third-party integrations. | A documented inventory of legitimate and unknown traffic exists. |
-| **1. Passive** | Enable conditions with no effect on traffic. Observe and measure only. | You understand what volume and type of traffic each condition flags. |
-| **2. Alert / CAPTCHA** | Medium-confidence conditions move to alert or CAPTCHA challenge. False positives are analyzed. | False positives are explained and handled (minimal exception, rule adjustment or application fix). |
-| **3. Block** | Only **high-confidence** conditions, already validated in testing, move to blocking. | Blocking does not affect legitimate traffic during the agreed observation period. |
-| **4. Maintenance** | Periodic reviews: are exceptions still valid? Did the application change? Are new techniques appearing? | Documented review. |
+| **1. Passive / Alert (no action)** | Enable conditions without applying any action to traffic: observe and measure only. False positives are analyzed. | You understand what volume and type of traffic each condition flags, and false positives are explained and handled (minimal exception, rule adjustment or application fix). |
+| **2. Active action (CAPTCHA or Block)** | A real action is applied to traffic. Choose by the condition's confidence: **CAPTCHA** for ambiguous traffic and **Block** only for **high-confidence** conditions already validated in testing. | The action does not affect legitimate traffic during the agreed observation period. |
+| **3. Maintenance** | Periodic reviews: are exceptions still valid? Did the application change? Are new techniques appearing? | Documented review. |
 
 **Control practices:**
 
@@ -120,7 +121,7 @@ To permit a legitimate bot (for example, an uptime monitor), combine **three con
 
 - **IP ∧ User-Agent ∧ Host**: an attacker would need to spoof all three at once.
 - For search engines, also verify **reverse DNS with forward confirmation**; User-Agent alone is not enough.
-- Prefer the **Tag** action over Allow to preserve visibility. See [Exceptions Without Losing Visibility](../05-excepciones-y-tuning/exceptions-and-visibility.en.md).
+- Before creating the exception, check which mechanism keeps events. See [Exceptions Without Losing Visibility](../05-excepciones-y-tuning/exceptions-and-visibility.en.md).
 
 ## 9. Cookies and Subdomains
 

@@ -25,7 +25,7 @@ Una colección de runbooks basada en operación real de Imperva Cloud WAAP (WAF,
 |---|---|---|
 | 1 | Evaluar antes de remediar | Primero se entiende qué ocurre; después se decide qué cambiar. |
 | 2 | Línea base primero | Sin saber cómo es el tráfico normal, cualquier regla es una apuesta. |
-| 3 | Passive → Alert/CAPTCHA → Block | Nunca se salta una fase. |
+| 3 | Passive/Alert → acción activa (CAPTCHA o Block) | Primero se observa sin aplicar ninguna acción; después se actúa. Nunca se salta ese paso. |
 | 4 | Validar fuera de producción | Los falsos positivos se descubren en pruebas, no con usuarios reales. |
 | 5 | Inventario legítimo antes de bloquear | Hay que saber qué tráfico propio y de terceros es válido antes de activar un bloqueo. |
 | 6 | Preservar la visibilidad | Una excepción que apaga los logs es una zona ciega. |
@@ -76,7 +76,7 @@ A set of runbooks based on real-world operation of Imperva Cloud WAAP (WAF, Adva
 |---|---|---|
 | 1 | Evaluate before remediating | Understand what is happening first; decide what to change afterwards. |
 | 2 | Baseline first | Without knowing what normal traffic looks like, every rule is a guess. |
-| 3 | Passive → Alert/CAPTCHA → Block | Never skip a phase. |
+| 3 | Passive/Alert → active action (CAPTCHA or Block) | Observe first without applying any action; then act. Never skip that step. |
 | 4 | Validate outside production | False positives should surface in testing, not with real users. |
 | 5 | Legitimate inventory before blocking | Know which first- and third-party traffic is valid before enabling a block. |
 | 6 | Preserve visibility | An exception that turns logging off is a blind spot. |

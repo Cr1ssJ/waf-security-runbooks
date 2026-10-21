@@ -20,7 +20,7 @@ Este runbook explica cómo desplegar ABP en fases, cómo clasificar el tráfico 
 
 1. Diagnosticar antes de actuar.
 2. Construir una línea base de tráfico antes de crear reglas.
-3. Avanzar siempre en el orden **Passive → Alert/CAPTCHA → Block**, sin saltar fases.
+3. Avanzar siempre en dos etapas: primero **modo Passive/Alert**, donde **no se aplica ninguna acción** y solo se observa; después una **acción activa**, que puede ser **CAPTCHA** o **Block**. Alert y CAPTCHA no son lo mismo: Alert no actúa sobre el tráfico, CAPTCHA sí. Nunca se salta la etapa de observación.
 4. Validar los falsos positivos en un ambiente de pruebas antes de pasar a producción.
 5. Identificar el tráfico legítimo (propio y de terceros) antes de activar condiciones de bloqueo.
 6. Preferir señales de **comportamiento** sobre firmas fáciles de rotar.
@@ -40,9 +40,9 @@ Una forma ordenada de planificar ABP es dividirlo en pilares. Cada uno se recorr
 
 | Pilar | Qué busca | Lógica sugerida | Precauciones |
 |---|---|---|---|
-| **1. Higiene de tráfico** | Descartar solicitudes que ningún navegador real genera: sin User-Agent, rutas mal normalizadas, ausencia de token, origen en proveedores cloud. | Evaluar cada señal por separado en Passive y decidir después cómo combinarlas. | La ausencia de token es normal en integraciones sin navegador. Los proveedores cloud pueden alojar infraestructura **propia**: confirma un inventario de ASN legítimos antes de bloquear. |
-| **2. Detección de manipulación** | Tráfico que altera su propio token o su interrogación (por ejemplo, checksums inválidos o manipulación del desafío). | `any` (OR): basta **una** señal. | Son señales de alta confianza, pero igual se validan en Passive primero. |
-| **3. Detección de emulación de entorno** | Navegadores automatizados o que mienten sobre su identidad (impostores, *webdriver*, herramientas de evasión). | Combinar con otras señales; las de menor precisión se **etiquetan (Tag)** y se actúa sobre la etiqueta. | Algunas señales de manipulación de huella tienen falsos positivos conocidos en dispositivos poco comunes. Ejemplos de señales a revisar (confirma los nombres en tu consola): `browser_impostor`, `fingerprint_tampering_*`. |
+| **1. Higiene de tráfico** | Descartar solicitudes que ningún navegador real genera: sin User-Agent, rutas mal normalizadas, ausencia de token, origen en proveedores cloud. | Evaluar cada señal por separado en Passive/Alert y decidir después cómo combinarlas. | La ausencia de token es normal en integraciones sin navegador. Los proveedores cloud pueden alojar infraestructura **propia**: confirma un inventario de ASN legítimos antes de bloquear. |
+| **2. Detección de manipulación** | Tráfico que altera su propio token o su interrogación (por ejemplo, checksums inválidos o manipulación del desafío). | `any` (OR): basta **una** señal. | Son señales de alta confianza, pero igual se validan primero en Passive/Alert. |
+| **3. Detección de emulación de entorno** | Navegadores automatizados o que mienten sobre su identidad (impostores, *webdriver*, herramientas de evasión). | Combinar con otras señales; las de menor precisión se mantienen en Passive/Alert hasta combinarse con otros indicadores, y solo entonces pasan a una acción activa. | Algunas señales de manipulación de huella tienen falsos positivos conocidos en dispositivos poco comunes. Ejemplos de señales a revisar (confirma los nombres en tu consola): `browser_impostor`, `fingerprint_tampering_*`. |
 | **4. Separación de ambientes** | Evitar que el tráfico de pruebas contamine producción. | Depende de la arquitectura. | Es **opcional** y puede quedar en pausa por decisión del dueño de la aplicación. |
 
 > **Regla práctica:** usa `any` (OR) para detectar **manipulación** y `all` (AND) para **fraude correlacionado**. Así reduces los falsos positivos donde una sola señal no basta.
@@ -51,13 +51,14 @@ Una forma ordenada de planificar ABP es dividirlo en pilares. Cada uno se recorr
 
 El criterio para avanzar es la **evidencia**, no el calendario. La duración de cada fase depende del volumen de tráfico del sitio.
 
+> **Importante:** Alert y CAPTCHA son cosas distintas. En modo **Passive/Alert no se aplica ninguna acción** sobre el tráfico; **CAPTCHA y Block sí son acciones activas**.
+
 | Fase | Qué se hace | Criterio de salida |
 |---|---|---|
 | **0. Línea base** | Inventariar el tráfico normal con las cinco dimensiones (sección 6): User-Agent, ISP/ASN, rutas, horarios y comportamiento de sesión. Identificar integraciones propias y de terceros. | Existe un inventario documentado de tráfico legítimo y de tráfico desconocido. |
-| **1. Passive** | Activar las condiciones sin ningún efecto sobre el tráfico. Solo se observa y se mide. | Se entiende qué volumen y qué tipo de tráfico marca cada condición. |
-| **2. Alert / CAPTCHA** | Las condiciones de confianza media pasan a alertar o a desafiar con CAPTCHA. Se analizan los falsos positivos. | Los falsos positivos están explicados y tratados (excepción mínima, ajuste de regla o corrección en la aplicación). |
-| **3. Block** | Solo las condiciones de **alta confianza**, ya validadas en pruebas, pasan a bloqueo. | El bloqueo no afecta a tráfico legítimo durante el periodo de observación acordado. |
-| **4. Mantenimiento** | Revisiones periódicas: ¿siguen vigentes las excepciones?, ¿cambió la aplicación?, ¿aparecieron nuevas técnicas? | Revisión documentada. |
+| **1. Passive / Alert (sin acción)** | Activar las condiciones sin aplicar ninguna acción sobre el tráfico: solo se observa y se mide. Se analizan los falsos positivos. | Se entiende qué volumen y qué tipo de tráfico marca cada condición, y los falsos positivos están explicados y tratados (excepción mínima, ajuste de regla o corrección en la aplicación). |
+| **2. Acción activa (CAPTCHA o Block)** | Se aplica una acción real sobre el tráfico. Se elige según la confianza de la condición: **CAPTCHA** para tráfico ambiguo y **Block** solo para condiciones de **alta confianza**, ya validadas en pruebas. | La acción no afecta a tráfico legítimo durante el periodo de observación acordado. |
+| **3. Mantenimiento** | Revisiones periódicas: ¿siguen vigentes las excepciones?, ¿cambió la aplicación?, ¿aparecieron nuevas técnicas? | Revisión documentada. |
 
 **Buenas prácticas de control:**
 
@@ -120,7 +121,7 @@ Para permitir un bot legítimo (por ejemplo, un monitor de disponibilidad) combi
 
 - **IP ∧ User-Agent ∧ Host**: un atacante necesitaría falsificar las tres a la vez.
 - Para buscadores, verifica además el **DNS inverso con confirmación directa**; el User-Agent solo no basta.
-- Prefiere la acción **Tag** sobre Allow para conservar visibilidad. Ver [Excepciones sin perder visibilidad](../05-excepciones-y-tuning/excepciones-y-visibilidad.es.md).
+- Antes de crear la excepción, revisa qué mecanismo conserva los eventos. Ver [Excepciones sin perder visibilidad](../05-excepciones-y-tuning/excepciones-y-visibilidad.es.md).
 
 ## 9. Cookies y subdominios
 
